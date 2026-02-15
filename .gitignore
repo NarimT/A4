@@ -1,3 +1,6 @@
 bert_model_with_config.pth
 *.pth
 *.pt
+bert_model_with_config.pth
+*.pth
+*.pt
