@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Similarity - NLI Prediction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .input-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(42,82,152,0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            border-left: 5px solid #2a5298;
+        }
+        .result-label {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .label-entailment { color: #28a745; }
+        .label-neutral { color: #ffc107; }
+        .label-contradiction { color: #dc3545; }
+        .confidence-bars {
+            margin: 16px 0;
+        }
+        .confidence-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .confidence-name {
+            width: 120px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
+        .confidence-bar-bg {
+            flex: 1;
+            height: 24px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+        .confidence-bar {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.5s ease;
+        }
+        .bar-entailment { background: #28a745; }
+        .bar-neutral { background: #ffc107; }
+        .bar-contradiction { background: #dc3545; }
+        .confidence-pct {
+            width: 50px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+        .similarity {
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #dee2e6;
+        }
+        .similarity-score {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2a5298;
+        }
+        .examples {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .examples h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .example-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 4px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .example-btn:hover {
+            background: #d0d4d9;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #2a5298;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Text Similarity</h1>
+        <p class="subtitle">Natural Language Inference using custom S-BERT model</p>
+
+        <div class="input-group">
+            <label for="premise">Premise</label>
+            <textarea id="premise" placeholder="Enter the premise sentence..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="hypothesis">Hypothesis</label>
+            <textarea id="hypothesis" placeholder="Enter the hypothesis sentence..."></textarea>
+        </div>
+
+        <button class="btn" id="predictBtn" onclick="predict()">Predict NLI Label</button>
+
+        <div class="loading" id="loading">
+            <span class="spinner"></span> Analyzing sentences...
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-card">
+                <div class="result-label" id="resultLabel"></div>
+                <div class="confidence-bars">
+                    <div class="confidence-row">
+                        <span class="confidence-name">Entailment</span>
+                        <div class="confidence-bar-bg">
+                            <div class="confidence-bar bar-entailment" id="barEntailment"></div>
+                        </div>
+                        <span class="confidence-pct" id="pctEntailment"></span>
+                    </div>
+                    <div class="confidence-row">
+                        <span class="confidence-name">Neutral</span>
+                        <div class="confidence-bar-bg">
+                            <div class="confidence-bar bar-neutral" id="barNeutral"></div>
+                        </div>
+                        <span class="confidence-pct" id="pctNeutral"></span>
+                    </div>
+                    <div class="confidence-row">
+                        <span class="confidence-name">Contradiction</span>
+                        <div class="confidence-bar-bg">
+                            <div class="confidence-bar bar-contradiction" id="barContradiction"></div>
+                        </div>
+                        <span class="confidence-pct" id="pctContradiction"></span>
+                    </div>
+                </div>
+                <div class="similarity">
+                    Cosine Similarity: <span class="similarity-score" id="cosineSim"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <button class="example-btn" onclick="loadExample(0)">🎸 Guitar / Music</button>
+            <button class="example-btn" onclick="loadExample(1)">🐕 Dog / Cat</button>
+            <button class="example-btn" onclick="loadExample(2)">☀️ Weather</button>
+            <button class="example-btn" onclick="loadExample(3)">📚 Education</button>
+        </div>
+    </div>
+
+    <script>
+        const examples = [
+            {
+                premise: "A man is playing a guitar on stage.",
+                hypothesis: "The man is performing music."
+            },
+            {
+                premise: "A dog is running in the park.",
+                hypothesis: "A cat is sleeping on the couch."
+            },
+            {
+                premise: "It is raining outside.",
+                hypothesis: "The weather is sunny and warm."
+            },
+            {
+                premise: "Your contribution helped make it possible for us to provide our students with a quality education.",
+                hypothesis: "Your contributions were of no help with our students' education."
+            }
+        ];
+
+        function loadExample(idx) {
+            document.getElementById('premise').value = examples[idx].premise;
+            document.getElementById('hypothesis').value = examples[idx].hypothesis;
+        }
+
+        async function predict() {
+            const premise = document.getElementById('premise').value.trim();
+            const hypothesis = document.getElementById('hypothesis').value.trim();
+
+            if (!premise || !hypothesis) {
+                alert('Please enter both a premise and a hypothesis.');
+                return;
+            }
+
+            const btn = document.getElementById('predictBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ premise, hypothesis })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Set label
+                const labelEl = document.getElementById('resultLabel');
+                labelEl.textContent = data.label;
+                labelEl.className = 'result-label label-' + data.label.toLowerCase();
+
+                // Set confidence bars
+                const ent = (data.confidence.entailment * 100).toFixed(1);
+                const neu = (data.confidence.neutral * 100).toFixed(1);
+                const con = (data.confidence.contradiction * 100).toFixed(1);
+
+                document.getElementById('barEntailment').style.width = ent + '%';
+                document.getElementById('barNeutral').style.width = neu + '%';
+                document.getElementById('barContradiction').style.width = con + '%';
+                document.getElementById('pctEntailment').textContent = ent + '%';
+                document.getElementById('pctNeutral').textContent = neu + '%';
+                document.getElementById('pctContradiction').textContent = con + '%';
+
+                // Set cosine similarity
+                document.getElementById('cosineSim').textContent = data.cosine_similarity.toFixed(4);
+
+                result.style.display = 'block';
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
