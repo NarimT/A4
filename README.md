@@ -103,7 +103,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Then open your browser at: **http://localhost:5001**
+Then open your browser at: **http://localhost:3000**
 
 > **Note:** If port 5001 is also in use, change the port number in the last line of `app/app.py`.
 
@@ -131,6 +131,9 @@ Then open your browser at: **http://localhost:5001**
 | Macro F1 | 0.1935 | 0.1669 |
 
 > **Note:** Performance is limited due to small pre-training data (100k samples), word-level tokenization (~23k vocab), and small fine-tuning dataset (1000 samples). See Task 3 discussion in the notebook for detailed analysis and proposed improvements.
+
+### Demo 
+!(demo)[demo-gif.gif]
 
 ---
 
