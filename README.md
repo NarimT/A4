@@ -132,10 +132,10 @@ Then open your browser at: **http://localhost:3000**
 
 > **Note:** Performance is limited due to small pre-training data (100k samples), word-level tokenization (~23k vocab), and small fine-tuning dataset (1000 samples). See Task 3 discussion in the notebook for detailed analysis and proposed improvements.
 
-### Demo 
-!(demo)[demo-gif.gif]
-
 ---
+### Demo 
+![demo](demo-gif.gif)
+
 
 ## 📚 References
 
